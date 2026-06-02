@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './OnboardingFlow.css';
 
 interface Props {
@@ -31,6 +32,7 @@ export const OnboardingFlow = ({ isOpen, onComplete, onSkip }: Props) => {
   if (!isOpen) return null;
 
   const isLastStep = currentStep === steps.length - 1;
+  const isFirstStep = currentStep === 0;
   const step = steps[currentStep];
 
   const handleNext = () => {
@@ -42,36 +44,76 @@ export const OnboardingFlow = ({ isOpen, onComplete, onSkip }: Props) => {
     }
   };
 
+  const handleBack = () => {
+    if (!isFirstStep) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   const handleSkip = () => {
     localStorage.setItem('onboarding_completed', 'true');
     onSkip();
   };
 
   return (
-    <div className="onboarding-overlay">
+    <div className="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Onboarding">
       <div className="onboarding-content">
-        <button className="skip-btn" onClick={handleSkip}>Skip</button>
-        
-        <div className="onboarding-step">
-          <div className="step-icon">{step.icon}</div>
-          <h2>{step.title}</h2>
-          <p>{step.description}</p>
+        <button className="skip-btn" onClick={handleSkip} aria-label="Skip onboarding">
+          Skip
+        </button>
+
+        <div className="progress-label" aria-live="polite">
+          Step {currentStep + 1} of {steps.length}
         </div>
 
-        <div className="step-indicators">
+        <div className="step-container">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              className="onboarding-step"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="step-icon">{step.icon}</div>
+              <h2>{step.title}</h2>
+              <p>{step.description}</p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <div className="step-indicators" role="list">
           {steps.map((_, index) => (
             <div
               key={index}
+              role="listitem"
               className={`indicator ${index === currentStep ? 'active' : ''} ${index < currentStep ? 'completed' : ''}`}
+              aria-current={index === currentStep ? 'step' : undefined}
+              aria-label={`Step ${index + 1}`}
             >
               {index < currentStep ? '✓' : index + 1}
             </div>
           ))}
         </div>
 
-        <button className="primary-btn" onClick={handleNext}>
-          {isLastStep ? 'Get Started' : 'Next'}
-        </button>
+        <div className="button-group">
+          <button
+            className="secondary-btn"
+            onClick={handleBack}
+            disabled={isFirstStep}
+            aria-label="Go back"
+          >
+            Back
+          </button>
+          <button
+            className="primary-btn"
+            onClick={handleNext}
+            aria-label={isLastStep ? 'Get started' : 'Next step'}
+          >
+            {isLastStep ? 'Get Started' : 'Next'}
+          </button>
+        </div>
       </div>
     </div>
   );
