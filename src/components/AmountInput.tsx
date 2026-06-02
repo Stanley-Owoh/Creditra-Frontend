@@ -71,7 +71,11 @@ export function AmountInput({
   };
   const currentTone = toneBySeverity[validation.feedback.severity];
   const inputStateClassName = currentTone.input;
-  const describedBy = `${helperId} ${constraintsId} ${statusId}`;
+  const hasError = validation.feedback.severity === "danger";
+  const isValid = validation.isValid;
+  const handleMaxClick = () => handlePreset(100);
+  const getMessageType = () => validation.feedback.severity;
+  const describedBy = `${helperId} ${constraintsId} ${statusId}${hasError ? ` ${errorId}` : ""}`;
 
   return (
     <div className="space-y-8">
@@ -102,7 +106,7 @@ export function AmountInput({
 
         {/* Input field with border styling based on validation state */}
         <div
-          className={`flex items-center gap-2 bg-surface p-4 rounded-xl border-2 overflow-hidden transition-colors ${getInputStateClass()}`}
+          className={`flex items-center gap-2 bg-surface p-4 rounded-xl border-2 overflow-hidden transition-colors ${inputStateClassName}`}
         >
           <span
             className="text-3xl font-bold text-foreground flex-shrink-0"

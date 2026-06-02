@@ -4,7 +4,7 @@ interface UseFocusTrapOptions {
   /** Whether the trap is active */
   isActive: boolean;
   /** Ref to the trigger element that opened the modal (for return focus) */
-  triggerRef?: React.RefObject<<HTMLElement | null>;
+  triggerRef?: React.RefObject<HTMLElement | null>;
   /** Callback when Escape is pressed */
   onEscape?: () => void;
 }
@@ -23,8 +23,8 @@ const FOCUSABLE_SELECTOR = [
 ].join(', ');
 
 export function useFocusTrap({ isActive, triggerRef, onEscape }: UseFocusTrapOptions) {
-  const containerRef = useRef<<HTMLDivElement>(null);
-  const previousActiveElement = useRef<<HTMLElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
 
   // Store the element that had focus before the modal opened
   useEffect(() => {
@@ -96,17 +96,20 @@ export function useFocusTrap({ isActive, triggerRef, onEscape }: UseFocusTrapOpt
     };
   }, [isActive, onEscape]);
 
-  // Return focus to trigger or previous element on close
+  // Return focus to trigger or previous element on close or unmount
   useEffect(() => {
+    if (!isActive) return; // only set up return-focus when active
+
     return () => {
-      // On unmount or when isActive becomes false, return focus
+      // Cleanup runs when isActive goes false → true or on unmount
       if (triggerRef?.current) {
         triggerRef.current.focus();
       } else if (previousActiveElement.current) {
         previousActiveElement.current.focus();
       }
     };
-  }, [triggerRef]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive]);
 
   return containerRef;
 }
