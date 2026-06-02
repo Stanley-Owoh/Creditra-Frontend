@@ -32,52 +32,46 @@ export function AmountInput({
     onAmountChange(numAmount);
   }, [amount, onAmountChange]);
 
-  // Compute validation state using the validation function
+  const handlePreset = (percent: number) => {
+    const preset = Math.floor((creditLine.available * percent) / 100);
+    setAmount(preset.toString());
+  };
+
+  const numAmount = parseFloat(amount) || 0;
   const validation = getDrawAmountValidation(amount, creditLine);
-  const numAmount = validation.amount;
-  const hasError = validation.feedback.severity === "danger";
-  const isValid = validation.isValid;
-
-  // Build aria-describedby: always include helper, add error message ID if there's an error
-  const describedByIds = [helperId];
-  if (hasError) {
-    describedByIds.push(errorId);
-  }
-  const describedBy = describedByIds.join(" ");
-
-  // Map validation severity to FormMessage type
-  const getMessageType = (): "success" | "danger" | "warning" | "info" => {
-    switch (validation.feedback.severity) {
-      case "success":
-        return "success";
-      case "danger":
-        return "danger";
-      case "warning":
-        return "warning";
-      case "info":
-      default:
-        return "info";
-    }
+  const toneBySeverity = {
+    info: {
+      bg: "bg-blue-500/10",
+      border: "border-blue-400/30",
+      text: "text-blue-100",
+      icon: <Info className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />,
+      input: "border-border focus-within:border-blue-400",
+    },
+    success: {
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-400/30",
+      text: "text-emerald-100",
+      icon: <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />,
+      input: "border-emerald-400/60",
+    },
+    warning: {
+      bg: "bg-amber-500/10",
+      border: "border-amber-400/30",
+      text: "text-amber-100",
+      icon: <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />,
+      input: "border-amber-400/60",
+    },
+    danger: {
+      bg: "bg-red-500/10",
+      border: "border-red-400/30",
+      text: "text-red-100",
+      icon: <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />,
+      input: "border-red-400/70",
+    },
   };
-
-  // Determine input border styling based on validation state
-  const getInputStateClass = (): string => {
-    if (hasError) {
-      return "border-error ring-1 ring-error/30 focus-within:border-error focus-within:ring-error/50";
-    }
-    if (validation.feedback.severity === "success") {
-      return "border-success ring-1 ring-success/30 focus-within:border-success focus-within:ring-success/50";
-    }
-    if (validation.feedback.severity === "warning") {
-      return "border-warning ring-1 ring-warning/30 focus-within:border-warning focus-within:ring-warning/50";
-    }
-    return "border-border focus-within:border-accent focus-within:ring-1 focus-within:ring-accent/30";
-  };
-
-  // Handle "Max" button click - set amount to available credit
-  const handleMaxClick = () => {
-    setAmount(creditLine.available.toString());
-  };
+  const currentTone = toneBySeverity[validation.feedback.severity];
+  const inputStateClassName = currentTone.input;
+  const describedBy = `${helperId} ${constraintsId} ${statusId}`;
 
   return (
     <div className="space-y-8">
