@@ -173,9 +173,10 @@ describe("AmountInput", () => {
       />,
     );
 
-    const helpText = screen.getByText(/available limit/i);
-    expect(helpText).toBeInTheDocument();
-    expect(helpText.closest("p")).toHaveTextContent("$35,000");
+    const helperPara = document.getElementById("draw-amount-helper");
+    expect(helperPara).toBeInTheDocument();
+    expect(helperPara).toHaveTextContent(/available limit/i);
+    expect(helperPara).toHaveTextContent("$35,000");
   });
 
   it("sets input to invalid state with proper styling when error occurs", () => {
