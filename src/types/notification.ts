@@ -1,3 +1,7 @@
+/**
+ * Severity of a notification. Drives icon, color, and assertive vs
+ * polite ARIA live-region semantics.
+ */
 export type NotificationType = 'success' | 'error' | 'warning' | 'info' | 'danger';
 
 export type NotificationCategory =
@@ -18,6 +22,11 @@ export interface Notification {
   action?: { label: string; onClick: () => void };
 }
 
+/**
+ * A transient toast notification. Unlike a regular Notification, a Toast
+ * is not tracked in the read/unread inbox — it lives only for the
+ * duration of its display.
+ */
 export interface Toast extends Omit<Notification, 'read'> {
   duration?: number; // ms, default 5500
   persistent?: boolean;
