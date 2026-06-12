@@ -15,6 +15,15 @@ interface UseInertBackdropOptions {
   modalId: string;
 }
 
+/**
+ * Make everything outside a given modal container unreachable to both
+ * pointer input and assistive technology while the modal is open.
+ *
+ * Prefers the native `inert` attribute when supported; falls back to
+ * `aria-hidden` plus `pointer-events: none` for older browsers. Original
+ * attribute values are restored on cleanup so this hook is safe to
+ * compose with manually managed `aria-hidden` regions.
+ */
 export function useInertBackdrop({ isInert, modalId }: UseInertBackdropOptions) {
   useEffect(() => {
     if (!isInert) return;
