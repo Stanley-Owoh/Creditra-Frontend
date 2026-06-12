@@ -44,6 +44,14 @@ export const getCreditReserveFloor = (limit: number, available: number) =>
 export const getWalletReserveFloor = (walletBalance: number) =>
   Math.min(walletBalance, Math.max(100, Math.round(walletBalance * 0.1)));
 
+/**
+ * Validate a user-entered draw amount against a credit line and produce
+ * UX-friendly feedback (success, info, warning, danger).
+ *
+ * The validation is purely UI-side and intentionally tolerant of partial
+ * input: empty strings produce an informational message rather than an
+ * error so the form does not feel hostile while the user is still typing.
+ */
 export function getDrawAmountValidation(
   amountInput: string,
   creditLine: { limit: number; available: number },
