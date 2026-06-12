@@ -22,6 +22,17 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex="0"]',
 ].join(', ');
 
+/**
+ * Trap keyboard focus inside a container while the trap is active.
+ *
+ * On activation, focus moves to the first focusable element in the
+ * container. Tab and Shift+Tab cycle within the container. Escape calls
+ * the provided `onEscape` handler. On deactivation, focus returns to
+ * `triggerRef` if supplied, otherwise to the element that had focus
+ * before the trap was activated.
+ *
+ * Returns a ref to attach to the container element.
+ */
 export function useFocusTrap({ isActive, triggerRef, onEscape }: UseFocusTrapOptions) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
