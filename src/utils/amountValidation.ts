@@ -111,6 +111,13 @@ export function getDrawAmountValidation(
   };
 }
 
+/**
+ * Validate a user-entered repayment amount against both the outstanding
+ * debt and the connected wallet's available balance.
+ *
+ * Returns a structured result containing the parsed amount, derived
+ * post-payment state, and UX-friendly feedback severity/title/message.
+ */
 export function getRepayAmountValidation(
   amountInput: string,
   totalDue: number,
