@@ -181,7 +181,14 @@
     flex: 1;
 }
 
-.th-filter-group label {
+.th-filter-group-wide {
+    min-width: 260px;
+    flex: 1.5;
+}
+
+.th-filter-group label,
+.th-filter-label,
+.th-search-group label {
     font-size: 0.7rem;
     color: var(--muted);
     text-transform: uppercase;
@@ -210,6 +217,43 @@
     cursor: pointer;
 }
 
+.th-chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.th-filter-chip {
+    padding: 0.5rem 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    min-height: 44px;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.th-filter-chip:hover {
+    border-color: var(--accent);
+    background: rgba(88, 166, 255, 0.08);
+}
+
+.th-filter-chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.th-filter-chip[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.16);
+}
+
 .th-search-group {
     display: flex;
     flex-direction: column;
@@ -220,6 +264,16 @@
 
 .th-search-group input::placeholder {
     color: var(--muted);
+}
+
+.th-filter-results {
+    align-self: flex-end;
+    margin-left: auto;
+    padding: 0.5rem 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
 }
 
 /* ─── Table Container ───────────────────────────────────────────────────────── */
@@ -481,6 +535,32 @@
     color: var(--muted);
 }
 
+.th-empty-no-results p {
+    margin-bottom: 1.25rem;
+}
+
+.th-clear-filters-btn {
+    padding: 0.625rem 1rem;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    color: var(--bg);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.15s;
+}
+
+.th-clear-filters-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.th-clear-filters-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
 /* ─── Pagination ───────────────────────────────────────────────────────────── */
 
 .th-pagination {
@@ -626,6 +706,11 @@
     .th-filter-group,
     .th-search-group {
         min-width: 100%;
+    }
+
+    .th-filter-results {
+        align-self: flex-start;
+        margin-left: 0;
     }
 
     /* Card-based layout for mobile */

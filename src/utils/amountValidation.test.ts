@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   getDrawAmountValidation,
   getRepayAmountValidation,
+  REPAY_CONFIRM_THRESHOLD,
+  requiresRepayConfirmation,
 } from './amountValidation';
 
 describe('getDrawAmountValidation', () => {
@@ -39,5 +41,33 @@ describe('getRepayAmountValidation', () => {
     expect(result.isValid).toBe(true);
     expect(result.feedback.severity).toBe('warning');
     expect(result.feedback.title).toBe('Low wallet reserve');
+  });
+});
+
+describe('REPAY_CONFIRM_THRESHOLD', () => {
+  it('defaults to 5000', () => {
+    expect(REPAY_CONFIRM_THRESHOLD).toBe(5000);
+  });
+});
+
+describe('requiresRepayConfirmation', () => {
+  it('returns false for amounts below the threshold', () => {
+    expect(requiresRepayConfirmation(4999)).toBe(false);
+    expect(requiresRepayConfirmation(0)).toBe(false);
+    expect(requiresRepayConfirmation(1)).toBe(false);
+  });
+
+  it('returns true for amounts at the threshold', () => {
+    expect(requiresRepayConfirmation(5000)).toBe(true);
+  });
+
+  it('returns true for amounts above the threshold', () => {
+    expect(requiresRepayConfirmation(5001)).toBe(true);
+    expect(requiresRepayConfirmation(10000)).toBe(true);
+  });
+
+  it('returns true for non-integer amounts at or above the threshold', () => {
+    expect(requiresRepayConfirmation(5000.01)).toBe(true);
+    expect(requiresRepayConfirmation(5250.50)).toBe(true);
   });
 });

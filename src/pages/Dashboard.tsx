@@ -1,15 +1,17 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CopyToClipboard } from '../components/CopyToClipboard';
+import { StatusBadge } from '../components/StatusBadge';
 import { useWallet } from '../context/WalletContext';
 import { MOCK_CREDIT_LINES } from '../data/mockData';
-import type { CreditLineStatus, Transaction } from '../types/creditLine';
+import type { Transaction } from '../types/creditLine';
 import {
-  COLOR, UTIL_COLOR, STATUS_COLOR,
+  COLOR, UTIL_COLOR,
   fmt, fmtDate,
   getUtilizationLevel, utilizationPct,
 } from '../utils/tokens';
 import './Dashboard.css';
+import { Skeleton } from '../components/Skeleton';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -94,23 +96,44 @@ function RiskGauge({ score, trend, lastUpdated }: {
   );
 }
 
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: CreditLineStatus }) {
-  const { bg, color } = STATUS_COLOR[status];
-  return (
-    <span className="status-badge" style={{ background: bg, color }}>
-      <span className="dot" style={{ background: color }} />
-      {status}
-    </span>
-  );
-}
-
 // ─── Dashboard Component ──────────────────────────────────────────────────────
 
+/**
+ * Default landing screen for a connected user.
+ *
+ * Renders four blocks in order of importance to the user:
+ *
+ *   1. Risk gauge — the score that determines every other number on the
+ *      page. Highest visual priority. See UX_RATIONALE.md "Risk gauge
+ *      prominently on the dashboard".
+ *   2. Credit summary tiles — total limit, drawn, available, next
+ *      payment.
+ *   3. Active credit lines — quick navigation into the credit-line
+ *      detail view.
+ *   4. Recent transactions — a five-row preview of the ledger with a
+ *      link into the full history.
+ *
+ * Loading state is simulated by a `setTimeout` to demonstrate the
+ * shimmer-skeleton pattern; when the backend lands, replace it with a
+ * real fetch (and keep the four-state loading -> empty / ready /
+ * error policy documented in `ARCHITECTURE.md` section 5).
+ *
+ * The page is intentionally stateless from a navigation perspective —
+ * it pulls wallet info from `useWallet()` and credit data from the mock
+ * data layer; everything else is rendered output.
+ */
 export function Dashboard() {
   const { wallet, status } = useWallet();
   const creditLines = MOCK_CREDIT_LINES;
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // ─── Derived data ────────────────────────────────────────────────────────
 
@@ -149,22 +172,30 @@ export function Dashboard() {
 
   // Notifications
   const notifications = useMemo(() => {
-    const notes: { icon: string; text: string; bg: string; time?: string }[] = [];
+    const notes: { icon: string; content: React.ReactNode; type: 'info' | 'warning' | 'danger'; time?: string }[] = [];
 
     creditLines.forEach(cl => {
       if (cl.status === 'Suspended') {
         notes.push({
           icon: '⚠️',
-          text: `<strong>${cl.name}</strong> has been suspended. Make a repayment to restore access.`,
-          bg: 'rgba(210,153,34,0.08)',
+          content: (
+            <>
+              <strong>{cl.name}</strong> has been suspended. Make a repayment to restore access.
+            </>
+          ),
+          type: 'warning',
           time: cl.updatedAt,
         });
       }
       if (cl.status === 'Defaulted') {
         notes.push({
           icon: '🚨',
-          text: `<strong>${cl.name}</strong> is in default (90+ days overdue). Contact support immediately.`,
-          bg: 'rgba(248,81,73,0.08)',
+          content: (
+            <>
+              <strong>{cl.name}</strong> is in default (90+ days overdue). Contact support immediately.
+            </>
+          ),
+          type: 'danger',
           time: cl.updatedAt,
         });
       }
@@ -173,8 +204,12 @@ export function Dashboard() {
         if (util >= 0.75) {
           notes.push({
             icon: '📊',
-            text: `<strong>${cl.name}</strong> utilization is at ${Math.round(util * 100)}%. Consider a repayment.`,
-            bg: 'rgba(210,153,34,0.08)',
+            content: (
+              <>
+                <strong>{cl.name}</strong> utilization is at {Math.round(util * 100)}%. Consider a repayment.
+              </>
+            ),
+            type: 'warning',
           });
         }
         if (cl.nextPaymentDate) {
@@ -182,8 +217,12 @@ export function Dashboard() {
           if (daysUntil > 0 && daysUntil <= 7) {
             notes.push({
               icon: '🗓️',
-              text: `Payment of <strong>${fmt(cl.nextPaymentAmount ?? 0)}</strong> due in ${daysUntil} day${daysUntil !== 1 ? 's' : ''} for ${cl.name}.`,
-              bg: 'rgba(88,166,255,0.08)',
+              content: (
+                <>
+                  Payment of <strong>{fmt(cl.nextPaymentAmount ?? 0)}</strong> due in {daysUntil} day{daysUntil !== 1 ? 's' : ''} for {cl.name}.
+                </>
+              ),
+              type: 'info',
             });
           }
         }
@@ -203,7 +242,7 @@ export function Dashboard() {
 
   // ─── Empty State ─────────────────────────────────────────────────────────
 
-  if (!hasLines) {
+  if (!loading && !hasLines) {
     return (
       <>
         {/* Header */}
@@ -250,7 +289,11 @@ export function Dashboard() {
   // ─── Main Dashboard ──────────────────────────────────────────────────────
 
   return (
-    <>
+    <div role="status" aria-live="polite" aria-busy={loading} className="dashboard-root">
+      <span className="sr-only">
+        {loading ? 'Loading dashboard' : 'Dashboard loaded'}
+      </span>
+
       {/* Header */}
       <div className="dashboard-header">
         <div>
@@ -281,25 +324,47 @@ export function Dashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="summary-cards">
-        <div className="summary-card">
-          <div className="glow" style={{ background: COLOR.accent }} />
-          <p className="label">Total Credit Limit</p>
-          <p className="value" style={{ color: COLOR.accent }}>{fmt(totalLimit)}</p>
-          <p className="sub">Across {activeLinesOnly.length} active line{activeLinesOnly.length !== 1 ? 's' : ''}</p>
-        </div>
-        <div className="summary-card">
-          <div className="glow" style={{ background: UTIL_COLOR[overallLevel] }} />
-          <p className="label">Total Utilized</p>
-          <p className="value" style={{ color: UTIL_COLOR[overallLevel] }}>{fmt(totalUtilized)}</p>
-          <p className="sub">{overallPct}% of total limit</p>
-        </div>
-        <div className="summary-card">
-          <div className="glow" style={{ background: COLOR.success }} />
-          <p className="label">Available Credit</p>
-          <p className="value" style={{ color: COLOR.success }}>{fmt(totalAvailable)}</p>
-          <p className="sub">Ready to draw</p>
-        </div>
+      <div className="summary-cards" aria-busy={loading}>
+        {loading ? (
+          <>
+            <div className="summary-card skeleton-card">
+              <Skeleton style={{ width: '60%', height: '14px', marginBottom: '16px', borderRadius: '4px' }} />
+              <Skeleton style={{ width: '80%', height: '32px', marginBottom: '12px', borderRadius: '4px' }} />
+              <Skeleton style={{ width: '40%', height: '12px', borderRadius: '4px' }} />
+            </div>
+            <div className="summary-card skeleton-card">
+              <Skeleton style={{ width: '60%', height: '14px', marginBottom: '16px', borderRadius: '4px' }} />
+              <Skeleton style={{ width: '80%', height: '32px', marginBottom: '12px', borderRadius: '4px' }} />
+              <Skeleton style={{ width: '40%', height: '12px', borderRadius: '4px' }} />
+            </div>
+            <div className="summary-card skeleton-card">
+              <Skeleton style={{ width: '60%', height: '14px', marginBottom: '16px', borderRadius: '4px' }} />
+              <Skeleton style={{ width: '80%', height: '32px', marginBottom: '12px', borderRadius: '4px' }} />
+              <Skeleton style={{ width: '40%', height: '12px', borderRadius: '4px' }} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="summary-card">
+              <div className="glow" style={{ background: COLOR.accent }} />
+              <p className="label">Total Credit Limit</p>
+              <p className="value" style={{ color: COLOR.accent }}>{fmt(totalLimit)}</p>
+              <p className="sub">Across {activeLinesOnly.length} active line{activeLinesOnly.length !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="summary-card">
+              <div className="glow" style={{ background: UTIL_COLOR[overallLevel] }} />
+              <p className="label">Total Utilized</p>
+              <p className="value" style={{ color: UTIL_COLOR[overallLevel] }}>{fmt(totalUtilized)}</p>
+              <p className="sub">{overallPct}% of total limit</p>
+            </div>
+            <div className="summary-card">
+              <div className="glow" style={{ background: COLOR.success }} />
+              <p className="label">Available Credit</p>
+              <p className="value" style={{ color: COLOR.success }}>{fmt(totalAvailable)}</p>
+              <p className="sub">Ready to draw</p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Main Grid */}
@@ -340,51 +405,117 @@ export function Dashboard() {
           </div>
 
           {/* Risk Score */}
-          <div className="card" style={{ animationDelay: '0.15s' }}>
+          <div className="card" style={{ animationDelay: '0.15s' }} aria-busy={loading}>
             <h2><span className="icon">🛡️</span> Risk Score</h2>
-            <RiskGauge
-              score={avgRiskScore}
-              trend="improving"
-              lastUpdated={activeLinesOnly[0]?.updatedAt ?? new Date().toISOString()}
-            />
+            {loading ? (
+              <div className="risk-gauge-container">
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100px', width: '160px', marginBottom: '0.75rem' }}>
+                  <Skeleton style={{ width: '80px', height: '80px', borderRadius: '50%' }} />
+                </div>
+                <div className="risk-meta" style={{ width: '100%' }}>
+                  <div className="risk-meta-item" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Skeleton style={{ width: '40px', height: '10px', marginBottom: '6px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '60px', height: '14px', borderRadius: '2px' }} />
+                  </div>
+                  <div className="risk-meta-item" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Skeleton style={{ width: '60px', height: '10px', marginBottom: '6px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '50px', height: '14px', borderRadius: '2px' }} />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <RiskGauge
+                score={avgRiskScore}
+                trend="improving"
+                lastUpdated={activeLinesOnly[0]?.updatedAt ?? new Date().toISOString()}
+              />
+            )}
           </div>
 
           {/* Active Credit Lines Preview */}
-          <div className="card" style={{ animationDelay: '0.2s' }}>
+          <div className="card" style={{ animationDelay: '0.2s' }} aria-busy={loading}>
             <h2>
               <span className="icon">💳</span> Active Credit Lines
-              <span style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 400, color: COLOR.muted }}>
-                {activeLines.length} line{activeLines.length !== 1 ? 's' : ''}
-              </span>
+              {!loading && (
+                <span style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 400, color: COLOR.muted }}>
+                  {activeLines.length} line{activeLines.length !== 1 ? 's' : ''}
+                </span>
+              )}
             </h2>
 
-            {activeLines.slice(0, 3).map(cl => {
-              const pct = utilizationPct(cl.utilized, cl.limit);
-              const level = getUtilizationLevel(cl.utilized, cl.limit);
-              return (
-                <div key={cl.id} className="cl-preview-item">
+            {loading ? (
+              <>
+                <div className="cl-preview-item">
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                      <p className="cl-preview-name">{cl.name}</p>
-                      <StatusBadge status={cl.status} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                      <Skeleton style={{ width: '100px', height: '14px', borderRadius: '2px' }} />
+                      <Skeleton style={{ width: '50px', height: '14px', borderRadius: '4px' }} />
                     </div>
-                    <p className="cl-preview-id">{cl.id}</p>
+                    <Skeleton style={{ width: '120px', height: '10px', borderRadius: '2px' }} />
                   </div>
-                  <div className="cl-preview-right">
-                    <div className="cl-preview-amount">
-                      {fmt(cl.utilized)} <span style={{ color: COLOR.muted, fontWeight: 400, fontSize: '0.75rem' }}>/ {fmt(cl.limit)}</span>
-                    </div>
-                    <div className="cl-preview-bar">
-                      <div className="cl-preview-bar-fill" style={{ width: `${pct}%`, background: UTIL_COLOR[level] }} />
-                    </div>
+                  <div className="cl-preview-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+                    <Skeleton style={{ width: '80px', height: '14px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '60px', height: '6px', borderRadius: '2px' }} />
                   </div>
                 </div>
-              );
-            })}
+                <div className="cl-preview-item">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                      <Skeleton style={{ width: '80px', height: '14px', borderRadius: '2px' }} />
+                      <Skeleton style={{ width: '50px', height: '14px', borderRadius: '4px' }} />
+                    </div>
+                    <Skeleton style={{ width: '100px', height: '10px', borderRadius: '2px' }} />
+                  </div>
+                  <div className="cl-preview-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+                    <Skeleton style={{ width: '70px', height: '14px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '50px', height: '6px', borderRadius: '2px' }} />
+                  </div>
+                </div>
+                <div className="cl-preview-item">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                      <Skeleton style={{ width: '90px', height: '14px', borderRadius: '2px' }} />
+                      <Skeleton style={{ width: '50px', height: '14px', borderRadius: '4px' }} />
+                    </div>
+                    <Skeleton style={{ width: '110px', height: '10px', borderRadius: '2px' }} />
+                  </div>
+                  <div className="cl-preview-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+                    <Skeleton style={{ width: '60px', height: '14px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '40px', height: '6px', borderRadius: '2px' }} />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {activeLines.slice(0, 3).map(cl => {
+                  const pct = utilizationPct(cl.utilized, cl.limit);
+                  const level = getUtilizationLevel(cl.utilized, cl.limit);
+                  return (
+                    <div key={cl.id} className="cl-preview-item">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                          <p className="cl-preview-name">{cl.name}</p>
+                          <StatusBadge status={cl.status} />
+                        </div>
+                        <p className="cl-preview-id">{cl.id}</p>
+                      </div>
+                      <div className="cl-preview-right">
+                        <div className="cl-preview-amount">
+                          {fmt(cl.utilized)} <span style={{ color: COLOR.muted, fontWeight: 400, fontSize: '0.75rem' }}>/ {fmt(cl.limit)}</span>
+                        </div>
+                        <div className="cl-preview-bar">
+                          <div className="cl-preview-bar-fill" style={{ width: `${pct}%`, background: UTIL_COLOR[level] }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
 
-            <Link to="/credit-lines" className="view-all-link">
-              View all credit lines →
-            </Link>
+                <Link to="/credit-lines" className="view-all-link">
+                  View all credit lines →
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -449,10 +580,37 @@ export function Dashboard() {
           </div>
 
           {/* Recent Activity */}
-          <div className="card" style={{ animationDelay: '0.18s' }}>
+          <div className="card" style={{ animationDelay: '0.18s' }} aria-busy={loading}>
             <h2><span className="icon">📝</span> Recent Activity</h2>
 
-            {recentActivity.length === 0 ? (
+            {loading ? (
+              <>
+                <div className="activity-item">
+                  <Skeleton className="activity-icon" style={{ borderRadius: '6px' }} />
+                  <div className="activity-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <Skeleton style={{ width: '120px', height: '14px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '180px', height: '10px', borderRadius: '2px' }} />
+                  </div>
+                  <Skeleton style={{ width: '60px', height: '14px', marginLeft: 'auto', borderRadius: '2px' }} />
+                </div>
+                <div className="activity-item">
+                  <Skeleton className="activity-icon" style={{ borderRadius: '6px' }} />
+                  <div className="activity-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <Skeleton style={{ width: '100px', height: '14px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '150px', height: '10px', borderRadius: '2px' }} />
+                  </div>
+                  <Skeleton style={{ width: '50px', height: '14px', marginLeft: 'auto', borderRadius: '2px' }} />
+                </div>
+                <div className="activity-item">
+                  <Skeleton className="activity-icon" style={{ borderRadius: '6px' }} />
+                  <div className="activity-content" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <Skeleton style={{ width: '140px', height: '14px', borderRadius: '2px' }} />
+                    <Skeleton style={{ width: '160px', height: '10px', borderRadius: '2px' }} />
+                  </div>
+                  <Skeleton style={{ width: '70px', height: '14px', marginLeft: 'auto', borderRadius: '2px' }} />
+                </div>
+              </>
+            ) : recentActivity.length === 0 ? (
               <p style={{ color: COLOR.muted, fontSize: '0.8rem', textAlign: 'center', padding: '1.5rem 0' }}>
                 No transactions yet
               </p>
@@ -486,13 +644,16 @@ export function Dashboard() {
               <h2><span className="icon">🔔</span> Alerts</h2>
 
               {notifications.map((note, i) => (
-                <div key={i} className="notification-item" style={{ background: note.bg }}>
-                  <span className="notification-icon">{note.icon}</span>
+                <div 
+                  key={i} 
+                  className={`notification-item notification-item--${note.type}`}
+                  role={note.type === 'danger' ? 'alert' : 'status'}
+                >
+                  <span className="notification-icon" aria-hidden="true">{note.icon}</span>
                   <div>
-                    <div
-                      className="notification-text"
-                      dangerouslySetInnerHTML={{ __html: note.text }}
-                    />
+                    <div className="notification-text">
+                      {note.content}
+                    </div>
                     {note.time && (
                       <div className="notification-time">{relativeTime(note.time)}</div>
                     )}
@@ -503,6 +664,6 @@ export function Dashboard() {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

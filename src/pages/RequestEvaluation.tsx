@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AccessibleTooltip } from '@/components/AccessibleTooltip';
 import { FormMessage } from '@/components/FormMessage';
 import { PendingButton } from '@/components/PendingButton';
 import { Skeleton } from '@/components/Skeleton';
@@ -221,7 +222,7 @@ export function RequestEvaluation() {
                 <label style={{ display: 'grid', gap: 6 }}>
                   <span style={{ fontSize: '0.85rem', color: COLOR.muted }}>
                     Revenue attestation (PDF/CSV)
-                    <span title="Upload recent revenue statements or attestations to potentially improve your limit and APR." style={{ marginLeft: 6, color: COLOR.accent, cursor: 'help' }}>ⓘ</span>
+                    <AccessibleTooltip label="Upload recent revenue statements or attestations to potentially improve your limit and APR." />
                   </span>
                   <input
                     type="file"
@@ -239,7 +240,7 @@ export function RequestEvaluation() {
                   />
                   <span style={{ color: COLOR.text }}>
                     Link identity bond
-                    <span title="If you’ve posted an identity bond, linking it may improve your risk profile." style={{ marginLeft: 6, color: COLOR.accent, cursor: 'help' }}>ⓘ</span>
+                    <AccessibleTooltip label="If you’ve posted an identity bond, linking it may improve your risk profile." />
                   </span>
                 </label>
               </div>
@@ -314,7 +315,7 @@ export function RequestEvaluation() {
                 <details style={{ border: `1px solid ${COLOR.border}`, borderRadius: 8, padding: '0.75rem 1rem' }} onToggle={e => setAgreeTermsPreviewed((e.target as HTMLDetailsElement).open)}>
                   <summary style={{ cursor: 'pointer', color: COLOR.text, fontWeight: 600 }}>
                     Preview Terms and Conditions
-                    <span title="Review your proposed terms before accepting." style={{ marginLeft: 8, color: COLOR.accent, cursor: 'help' }}>ⓘ</span>
+                    <AccessibleTooltip label="Review your proposed terms before accepting." />
                   </summary>
                   <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.2rem', color: COLOR.muted }}>
                     <li>Variable APR based on ongoing risk score updates</li>

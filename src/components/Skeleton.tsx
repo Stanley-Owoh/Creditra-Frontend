@@ -1,40 +1,31 @@
 import React from 'react';
+import './Skeleton.css';
 
-interface SkeletonProps {
+type SkeletonProps = React.HTMLAttributes<HTMLDivElement> & {
+  /** Width passed through as a CSS dimension (string or px number). */
   width?: string | number;
+  /** Height passed through as a CSS dimension (string or px number). */
   height?: string | number;
-  borderRadius?: string | number;
-  style?: React.CSSProperties;
-}
-
-export const Skeleton: React.FC<SkeletonProps> = ({ width = '100%', height = '1rem', borderRadius = '4px', style }) => {
-  const baseStyle: React.CSSProperties = {
-    width,
-    height,
-    borderRadius,
-    background: 'linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 37%, #e0e0e0 63%)',
-    backgroundSize: '200% 100%',
-    animation: 'shimmer 1.5s infinite',
-    ...style,
-  };
-
-  // Disable animation for reduced motion users
-  const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (prefersReduced) {
-    baseStyle.animation = 'none';
-    baseStyle.background = '#e0e0e0';
-  }
-
-  return <div style={baseStyle} role="status" aria-label="loading" />;
 };
 
-// Inject global keyframes if not already present
-if (typeof document !== 'undefined') {
-  const styleTagId = 'skeleton-shimmer-styles';
-  if (!document.getElementById(styleTagId)) {
-    const style = document.createElement('style');
-    style.id = styleTagId;
-    style.textContent = `@keyframes shimmer {\n  0% { background-position: -200% 0; }\n  100% { background-position: 200% 0; }\n}`;
-    document.head.appendChild(style);
-  }
-}
+/**
+ * Shimmer placeholder used during loading states.
+ *
+ * Dimensions are deliberately passed through as props so callers can
+ * match the size of the eventual content exactly — preserving CLS while
+ * a fetch is in flight.
+ *
+ * The shimmer animation is defined in `Skeleton.css` and is suppressed
+ * under `@media (prefers-reduced-motion: reduce)`. See the loading-state
+ * policy in `docs/ARCHITECTURE.md` section 5.
+ *
+ * @example
+ *   <Skeleton width="100%" height={48} aria-label="Loading credit lines" />
+ */
+export const Skeleton: React.FC<SkeletonProps> = ({ width, height, style, className, ...rest }) => (
+  <div
+    className={`skeleton ${className ?? ''}`.trim()}
+    style={{ width, height, ...style }}
+    {...rest}
+  />
+);

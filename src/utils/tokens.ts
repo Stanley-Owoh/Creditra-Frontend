@@ -1,3 +1,16 @@
+/**
+ * Design tokens consumed at the JS layer.
+ *
+ * Most components style themselves with CSS custom properties declared
+ * in `src/index.css`. This file exists for the cases where a component
+ * needs a token value in JavaScript — typically because the style is
+ * applied as an inline `React.CSSProperties` (e.g. SVG fill on the risk
+ * gauge, the dynamic badge palettes) rather than via a class name.
+ *
+ * Every value here must mirror the equivalent CSS custom property. If
+ * you change one, change the other. See `docs/DESIGN_SYSTEM.md` for the
+ * canonical catalogue.
+ */
 import type { CreditLineStatus, UtilizationLevel } from '../types/creditLine';
 import type React from 'react';
 
@@ -21,13 +34,17 @@ export const UTIL_COLOR: Record<UtilizationLevel, string> = {
   high: COLOR.danger,
 };
 
-export const STATUS_COLOR: Record<CreditLineStatus, { bg: string; color: string }> = {
-  Active: { bg: 'rgba(63,185,80,0.2)', color: COLOR.text },
-  Suspended: { bg: 'rgba(210,153,34,0.2)', color: COLOR.text },
-  Defaulted: { bg: 'rgba(248,81,73,0.15)', color: COLOR.text },
-  Closed: { bg: 'rgba(139,148,158,0.15)', color: COLOR.text },
+export const STATUS_COLOR: Record<CreditLineStatus, { bg: string; color: string; border: string }> = {
+  Active: { bg: 'rgba(63,185,80,0.16)', color: '#8ee99d', border: 'rgba(63,185,80,0.44)' },
+  Suspended: { bg: 'rgba(210,153,34,0.16)', color: '#f0c96a', border: 'rgba(210,153,34,0.46)' },
+  Defaulted: { bg: 'rgba(248,81,73,0.14)', color: '#ffb0aa', border: 'rgba(248,81,73,0.46)' },
+  Closed: { bg: 'rgba(139,148,158,0.16)', color: '#c4ccd6', border: 'rgba(139,148,158,0.42)' },
 };
 
+/**
+ * Map a numeric risk score (0–850, FICO-style scale) to a semantic color.
+ * Mirrors the credit-score badge thresholds used on the dashboard.
+ */
 export const RISK_COLOR = (score: number) =>
   score >= 700 ? COLOR.success : score >= 600 ? COLOR.warning : COLOR.danger;
 

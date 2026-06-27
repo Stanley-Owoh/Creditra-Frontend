@@ -1,40 +1,57 @@
-// src/utils/dates.ts
 /**
- * Utility functions for date formatting.
- * Provides a simple `formatRelative` function to display a relative time string
- * such as "2 minutes ago" or "in 5 seconds".
- * Uses the native `Intl.RelativeTimeFormat` for broad browser support without
- * adding extra dependencies.
+ * Small, dependency-free date helpers.
+ *
+ * We deliberately avoid pulling in moment / dayjs / luxon — the few
+ * formatting needs across the app can be served by `Intl.*` plus the
+ * helpers here.
  */
 
-export const formatRelative = (date: Date | string | number): string => {
-  const target = new Date(date);
-  const now = new Date();
-  const diffMs = target.getTime() - now.getTime();
-  const diffSec = Math.round(diffMs / 1000);
+const DEFAULT_LOCALE = 'en-US';
 
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+/**
+ * Return a human-friendly "time ago" string (e.g. `"3 minutes ago"`,
+ * `"2 days ago"`). Uses the browser's `Intl.RelativeTimeFormat` where
+ * available.
+ */
+export function timeAgo(
+  iso: string | Date,
+  now: Date = new Date(),
+  locale: string = DEFAULT_LOCALE,
+): string {
+  const then = iso instanceof Date ? iso : new Date(iso);
+  const diffSeconds = Math.round((then.getTime() - now.getTime()) / 1000);
+  const absSeconds = Math.abs(diffSeconds);
 
-  const thresholds: [number, Intl.RelativeTimeFormatUnit][] = [
-    [60, 'seconds'],
-    [60 * 60, 'minutes'],
-    [60 * 60 * 24, 'hours'],
-    [60 * 60 * 24 * 30, 'days'],
-    [60 * 60 * 24 * 365, 'months'],
-    [Infinity, 'years'],
+  const units: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+    ['year', 60 * 60 * 24 * 365],
+    ['month', 60 * 60 * 24 * 30],
+    ['day', 60 * 60 * 24],
+    ['hour', 60 * 60],
+    ['minute', 60],
+    ['second', 1],
   ];
 
-  let value = diffSec;
-  let unit: Intl.RelativeTimeFormatUnit = 'seconds';
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 
-  for (let i = 0; i < thresholds.length; i++) {
-    const [limit, u] = thresholds[i];
-    if (Math.abs(value) < limit) {
-      unit = u;
-      break;
+  for (const [unit, secondsPerUnit] of units) {
+    if (absSeconds >= secondsPerUnit || unit === 'second') {
+      const value = Math.round(diffSeconds / secondsPerUnit);
+      return rtf.format(value, unit);
     }
-    value = Math.round(value / limit);
   }
 
-  return rtf.format(value, unit);
-};
+  return rtf.format(0, 'second');
+}
+
+/**
+ * Return `true` when the given ISO timestamp falls on the same calendar
+ * day as `reference` (defaults to today).
+ */
+export function isSameDay(iso: string | Date, reference: Date = new Date()): boolean {
+  const date = iso instanceof Date ? iso : new Date(iso);
+  return (
+    date.getFullYear() === reference.getFullYear() &&
+    date.getMonth() === reference.getMonth() &&
+    date.getDate() === reference.getDate()
+  );
+}
