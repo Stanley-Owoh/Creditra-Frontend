@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './SuccessState.css';
+import { RepaySuccessShareCard } from './RepaySuccessShareCard';
 
 interface SuccessStateProps {
   /**
@@ -10,6 +11,10 @@ interface SuccessStateProps {
   type: 'draw' | 'repay' | 'evaluation';
   /** When supplied, surfaced so the user can copy a reference for support. */
   transactionId?: string;
+  /** When repay flow, amount repaid */
+  amount?: number;
+  /** When repay flow, credit line name */
+  creditLineName?: string;
   /** Dismiss the success state and return to the dashboard. */
   onClose: () => void;
   /**
@@ -36,9 +41,13 @@ interface SuccessStateProps {
 const SuccessState: React.FC<SuccessStateProps> = ({
   type,
   transactionId,
+  amount,
+  creditLineName,
   onClose,
   onViewHistory
 }) => {
+  const [showShareCard, setShowShareCard] = useState(false);
+
   const getContent = () => {
     switch (type) {
       case 'draw':
@@ -67,6 +76,20 @@ const SuccessState: React.FC<SuccessStateProps> = ({
 
   const content = getContent();
 
+  if (showShareCard && type === 'repay' && amount && creditLineName && transactionId) {
+    return (
+      <div className="success-state-container" role="status" aria-live="polite">
+        <RepaySuccessShareCard
+          amount={amount}
+          creditLineName={creditLineName}
+          transactionId={transactionId}
+          timestamp={new Date()}
+          onClose={() => setShowShareCard(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="success-state-container" role="status" aria-live="polite">
       <div className="success-icon-wrapper">
@@ -94,6 +117,14 @@ const SuccessState: React.FC<SuccessStateProps> = ({
             onClick={onViewHistory || (() => window.location.hash = '#/history')}
           >
             View Transaction History
+          </button>
+        )}
+        {type === 'repay' && (
+          <button 
+            className="btn-secondary" 
+            onClick={() => setShowShareCard(true)}
+          >
+            Share Summary
           </button>
         )}
         <button className="btn-primary" onClick={onClose}>
