@@ -53,6 +53,9 @@ heading.
 - `aria-sort="ascending|descending|none"` is set on the active column header.
 - Row order is the visual order; no reordering of DOM relative to layout.
 - Filter chips are styled `<button>`s with `aria-pressed` reflecting the toggle state.
+- Notification filters use the WAI-ARIA tab pattern: the group has `role="tablist"`,
+  each filter has `role="tab"`, the active filter sets `aria-selected="true"`, and
+  Arrow/Home/End keys move focus and selection.
 
 ### Forms
 
@@ -123,7 +126,7 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | `CopyToClipboard` | Real `<button>`; Enter copies | Specific `aria-label`; polite live region announces "Copied" | AA | n/a | OK |
 | `AccessibleTooltip` | Trigger is keyboard-focusable | `role="tooltip"`, `aria-describedby` | AA | n/a | OK |
 | `NotificationBell` | Tab/Enter; counter is decorative | `aria-label="Notifications, N unread"` | AA | n/a | OK |
-| `NotificationCenter` | Focus trap inside the panel | `role="dialog"`, category filters use `aria-pressed` | AA | reduced-motion gated | OK |
+| `NotificationCenter` | Focus trap inside the panel; Arrow/Home/End navigate category tabs | `role="dialog"`, category filters use `role="tab"` + `aria-selected` in a labelled `role="tablist"` | AA | reduced-motion gated | OK |
 | `ToastContainer` | Tab/Esc to dismiss | `role="status"` / `role="alert"` per severity | AA | reduced-motion gated | OK |
 | `BannerAlert` | Tab/Enter on action & dismiss | `role="alert"` for warning/error | AA | n/a | OK |
 | `Dashboard` (risk gauge) | n/a | Score and trend exposed via `<text>` + sibling text | AA | n/a | OK |
@@ -140,7 +143,7 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | --- | --- | --- | --- |
 | A11Y-001 | `OnboardingFlow` | Arrow-key step navigation not wired (today uses Next/Back buttons only) | next minor release |
 | A11Y-002 | `RepayModal` | Focus-trap call site uses legacy boolean signature; needs migration to `useFocusTrap({ isActive })` | next minor release |
-| A11Y-003 | `NotificationCenter` | Filter tabs use `aria-pressed` but should additionally expose `role="tab"` + `aria-selected` for AT consistency | next minor release |
+| A11Y-003 | `NotificationCenter` | Shipped: filter tabs expose `role="tab"` + `aria-selected` with roving `tabIndex` and Arrow/Home/End navigation | shipped |
 | A11Y-004 | Tables | `aria-sort` is set but caption text describing the table is not yet announced | next minor release |
 
 ---

@@ -230,7 +230,8 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
-.nc-filter-active {
+.nc-filter-active,
+.nc-filter-tab[aria-selected="true"] {
   color: #58a6ff;
   background: rgba(88, 166, 255, 0.1);
 }

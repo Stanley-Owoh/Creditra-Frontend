@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useNotifications } from '../../context/NotificationContext';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import type { NotificationCategory } from '../../types/notification';
@@ -41,8 +41,44 @@ export function NotificationCenter() {
   const [activeFilter, setActiveFilter] = useState<NotificationCategory | 'all'>('all');
   const [showPrefs, setShowPrefs] = useState(false);
   const panelRef = useFocusTrap({ isActive: isPanelOpen });
+  const filterTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const filtered = filterByCategory(activeFilter);
+
+  const selectFilterAtIndex = (index: number) => {
+    const category = CATEGORIES[index];
+    if (!category) return;
+
+    setActiveFilter(category.value);
+    filterTabRefs.current[index]?.focus();
+  };
+
+  const handleFilterKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const lastIndex = CATEGORIES.length - 1;
+    let nextIndex: number | null = null;
+
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIndex = index === lastIndex ? 0 : index + 1;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIndex = index === 0 ? lastIndex : index - 1;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = lastIndex;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    selectFilterAtIndex(nextIndex);
+  };
 
   useEffect(() => {
     if (!isPanelOpen) return;
@@ -154,18 +190,25 @@ export function NotificationCenter() {
         )}
 
         {/* Filter tabs */}
-        <div className="nc-filters" role="tablist">
-          {CATEGORIES.map(cat => (
+        <div className="nc-filters" role="tablist" aria-label="Notification filters">
+          {CATEGORIES.map((cat, index) => {
+            const isSelected = activeFilter === cat.value;
+
+            return (
             <button
               key={cat.value}
+              ref={element => { filterTabRefs.current[index] = element; }}
               role="tab"
-              aria-selected={activeFilter === cat.value}
-              className={`nc-filter-tab ${activeFilter === cat.value ? 'nc-filter-active' : ''}`}
+              aria-selected={isSelected}
+              tabIndex={isSelected ? 0 : -1}
+              className={`nc-filter-tab ${isSelected ? 'nc-filter-active' : ''}`}
               onClick={() => setActiveFilter(cat.value)}
+              onKeyDown={event => handleFilterKeyDown(event, index)}
             >
               {cat.label}
             </button>
-          ))}
+            );
+          })}
         </div>
 
         {/* Notification list */}
