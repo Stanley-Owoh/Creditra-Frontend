@@ -1,13 +1,13 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, MemoryRouter } from "react-router-dom";
 import { TransactionHistory } from "./TransactionHistory";
 
-const renderTransactionHistory = () => {
+const renderTransactionHistory = (initialEntries: string[] = ["/transactions"]) => {
   render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <TransactionHistory />
-    </BrowserRouter>,
+    </MemoryRouter>,
   );
 };
 
@@ -134,29 +134,45 @@ describe("TransactionHistory", () => {
     expect(screen.getByLabelText("End date")).toBeInTheDocument();
   });
 
-  it("applies a custom amount range from the modal", () => {
-    renderTransactionHistory();
+  it("activates preset chips from the URL and keeps them in sync", () => {
+    renderTransactionHistory(["/transactions?range=this-month"]);
 
-    fireEvent.click(screen.getByRole("button", { name: "Custom range" }));
+    expect(screen.getByRole("button", { name: "This Month" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByText(/7 transactions shown/i)).toBeInTheDocument();
+  });
 
-    expect(
-      screen.getByRole("dialog", { name: /choose a custom amount range/i }),
-    ).toBeInTheDocument();
+  it("deselects the active preset when a custom date is edited", () => {
+    renderTransactionHistory(["/transactions?range=this-week"]);
 
-    fireEvent.change(screen.getByLabelText("Minimum amount"), {
-      target: { value: "10000" },
-    });
-    fireEvent.change(screen.getByLabelText("Maximum amount"), {
-      target: { value: "20000" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /apply range/i }));
+    const startInput = screen.getByLabelText("Start date");
+    fireEvent.change(startInput, { target: { value: "2025-02-01" } });
 
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByText("3 transactions shown")).toBeTruthy();
-    expect(
-      screen.getByRole("button", {
-        name: /custom: min \$10,000 · max \$20,000/i,
-      }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "This Week" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: "Custom" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("clears the preset URL param and the active filters from the empty state", () => {
+    renderTransactionHistory(["/transactions?range=this-week"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Fee" }));
+    fireEvent.click(screen.getByRole("button", { name: "Today" }));
+
+    const clearButton = screen.getByRole("button", { name: /clear filters/i });
+    fireEvent.click(clearButton);
+
+    expect(screen.getByRole("button", { name: "This Week" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.queryByText(/no transactions match these filters/i)).not.toBeInTheDocument();
   });
 });
