@@ -1,8 +1,11 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { StatusBadge } from '../components/StatusBadge';
+import { CollateralSubstitutionModal } from '../components/CollateralSubstitutionModal';
 import { MOCK_CREDIT_LINES } from '../data/mockData';
 import type { CreditLineStatus, SortField, SortDirection } from '../types/creditLine';
+import type { CollateralAsset } from '../types/collateral';
+import { findAssetByName } from '../utils/collateral';
 import {
   COLOR, UTIL_COLOR,
   fmt, fmtDate, getUtilizationLevel, utilizationPct,
@@ -11,9 +14,15 @@ import './CreditLines.css';
 
 // ─── Credit Line Card ────────────────────────────────────────────────────────
 
-function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
+interface CreditLineCardProps {
+  line: typeof MOCK_CREDIT_LINES[0];
+  onSwapCollateral?: (line: typeof MOCK_CREDIT_LINES[0], triggerRef: React.RefObject<HTMLButtonElement | null>) => void;
+}
+
+function CreditLineCard({ line, onSwapCollateral }: CreditLineCardProps) {
   const pct = utilizationPct(line.utilized, line.limit);
   const level = getUtilizationLevel(line.utilized, line.limit);
+  const swapTriggerRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div className="cl-card">
@@ -76,6 +85,18 @@ function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
         {line.utilized > 0 && (
           <button className="cl-action-btn repay">↙ Repay</button>
         )}
+        {line.status === 'Active' && onSwapCollateral && (
+          <button
+            ref={swapTriggerRef}
+            type="button"
+            className="cl-action-btn"
+            style={{ color: COLOR.accent, borderColor: 'rgba(88,166,255,0.3)', background: 'rgba(88,166,255,0.08)' }}
+            onClick={() => onSwapCollateral(line, swapTriggerRef)}
+            aria-label={`Swap collateral for ${line.name}`}
+          >
+            ⇄ Swap Collateral
+          </button>
+        )}
       </div>
     </div>
   );
@@ -87,6 +108,31 @@ export default function CreditLines() {
   const [sortField, setSortField] = useState<SortField>('updatedAt');
   const [sortDir, setSortDir] = useState<SortDirection>('desc');
   const [statusFilter, setStatusFilter] = useState<CreditLineStatus | 'all'>('all');
+
+  // ── Collateral substitution modal state ──────────────────────────────────
+  type ModalTarget = {
+    line: typeof MOCK_CREDIT_LINES[0];
+    currentAsset: CollateralAsset | undefined;
+    triggerRef: React.RefObject<HTMLButtonElement | null>;
+  };
+  const [modalTarget, setModalTarget] = useState<ModalTarget | null>(null);
+
+  const handleSwapCollateral = (
+    line: typeof MOCK_CREDIT_LINES[0],
+    triggerRef: React.RefObject<HTMLButtonElement | null>,
+  ) => {
+    const currentAsset = findAssetByName(line.collateral);
+    setModalTarget({ line, currentAsset, triggerRef });
+  };
+
+  const handleModalClose = () => setModalTarget(null);
+
+  const handleModalSuccess = (incoming: CollateralAsset) => {
+    // In a real app: refetch or optimistically update the credit line list.
+    // For now we just close the modal — the parent knows which line was targeted.
+    setModalTarget(null);
+    void incoming; // consumed by parent via onSuccess callback
+  };
 
   const creditLines = MOCK_CREDIT_LINES;
 
@@ -199,9 +245,22 @@ export default function CreditLines() {
       ) : (
         <div className="cl-grid">
           {filteredAndSorted.map(line => (
-            <CreditLineCard key={line.id} line={line} />
+            <CreditLineCard key={line.id} line={line} onSwapCollateral={handleSwapCollateral} />
           ))}
         </div>
+      )}
+
+      {/* Collateral substitution modal — mounted at page level so it overlays everything */}
+      {modalTarget && (
+        <CollateralSubstitutionModal
+          isOpen
+          onClose={handleModalClose}
+          onSuccess={handleModalSuccess}
+          creditLineName={modalTarget.line.name}
+          loanBalance={modalTarget.line.utilized}
+          currentAsset={modalTarget.currentAsset}
+          triggerRef={modalTarget.triggerRef}
+        />
       )}
     </div>
   );
