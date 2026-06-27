@@ -29,22 +29,22 @@ function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
         <div className="cl-metrics">
           <div className="cl-metric">
             <span className="cl-metric-label">Limit</span>
-            <span className="cl-metric-value" style={{ color: COLOR.accent }}>{fmt(line.limit)}</span>
+            <span className="cl-metric-value num-tabular" style={{ color: COLOR.accent }}>{fmt(line.limit)}</span>
           </div>
           <div className="cl-metric">
             <span className="cl-metric-label">Utilized</span>
-            <span className="cl-metric-value" style={{ color: UTIL_COLOR[level] }}>{fmt(line.utilized)}</span>
+            <span className="cl-metric-value num-tabular" style={{ color: UTIL_COLOR[level] }}>{fmt(line.utilized)}</span>
           </div>
           <div className="cl-metric">
             <span className="cl-metric-label">Available</span>
-            <span className="cl-metric-value" style={{ color: COLOR.success }}>{fmt(line.limit - line.utilized)}</span>
+            <span className="cl-metric-value num-tabular" style={{ color: COLOR.success }}>{fmt(line.limit - line.utilized)}</span>
           </div>
         </div>
 
         <div className="cl-util-bar">
           <div className="cl-util-header">
             <span>Utilization</span>
-            <span style={{ color: UTIL_COLOR[level] }}>{pct}%</span>
+            <span className="num-tabular" style={{ color: UTIL_COLOR[level] }}>{pct}%</span>
           </div>
           <div className="cl-util-track">
             <div className="cl-util-fill" style={{ width: `${pct}%`, background: UTIL_COLOR[level] }} />
@@ -54,11 +54,11 @@ function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
         <div className="cl-details">
           <div className="cl-detail">
             <span className="label">APR</span>
-            <span className="value">{line.apr}%</span>
+            <span className="value num-tabular">{line.apr}%</span>
           </div>
           <div className="cl-detail">
             <span className="label">Risk Score</span>
-            <span className="value">{line.riskScore}</span>
+            <span className="value num-tabular">{line.riskScore}</span>
           </div>
           <div className="cl-detail">
             <span className="label">Opened</span>

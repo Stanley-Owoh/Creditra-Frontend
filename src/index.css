@@ -105,6 +105,11 @@ p {
   overflow: hidden;
 }
 
+/* Tabular numerals — prevents digit-width wobble in money/percent columns */
+.num-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
 .app {
   min-height: 100vh;
   display: flex;
