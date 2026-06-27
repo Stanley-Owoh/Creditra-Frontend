@@ -190,7 +190,7 @@ Every component below lives in `src/components/`.
 | Component | Purpose |
 | --- | --- |
 | `NotificationBell` | Header trigger with unread badge; 44×44 px target |
-| `NotificationCenter` | Side panel with category filters, mark-read, clear-all |
+| `NotificationCenter` | Side panel (≥768px) or bottom sheet with 50%/90% snap points (&lt;768px); category filters, mark-read, clear-all |
 | `ToastContainer` | Stack of transient toasts |
 | `BannerAlert` | Page-level alert with action + dismiss |
 | `notificationIcons.tsx` | Per-type icon set |
