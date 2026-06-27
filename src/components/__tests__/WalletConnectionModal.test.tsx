@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { WalletConnectionModal, WalletProvider } from '../WalletConnectionModal';
 
 // Mock hooks to avoid DOM side effects in test environment
@@ -23,18 +24,20 @@ const TestWrapper: React.FC<{
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <div>
-      <button ref={triggerRef} data-testid="trigger-button">
-        Open Wallet Modal
-      </button>
-      <WalletConnectionModal
-        isOpen={isOpen}
-        onClose={onClose}
-        onConnect={onConnect}
-        triggerRef={triggerRef}
-        detectedWallets={detectedWallets}
-      />
-    </div>
+    <MemoryRouter>
+      <div>
+        <button ref={triggerRef} data-testid="trigger-button">
+          Open Wallet Modal
+        </button>
+        <WalletConnectionModal
+          isOpen={isOpen}
+          onClose={onClose}
+          onConnect={onConnect}
+          triggerRef={triggerRef}
+          detectedWallets={detectedWallets}
+        />
+      </div>
+    </MemoryRouter>
   );
 };
 
@@ -78,7 +81,7 @@ describe('WalletConnectionModal Accessibility', () => {
     const albedoButton = screen.getByLabelText('Connect with Albedo');
     const xbullButton = screen.getByLabelText('Install xBull wallet');
     const rabetButton = screen.getByLabelText('Install Rabet wallet');
-    const learnLink = screen.getByRole('link', { name: /learn about wallets/i });
+    const learnLink = screen.getByRole('link', { name: /visit the wallet setup guide/i });
 
     // Focus should start on first focusable element
     await waitFor(() => {
@@ -119,7 +122,7 @@ describe('WalletConnectionModal Accessibility', () => {
     );
 
     const closeButton = screen.getByLabelText('Close wallet connection dialog');
-    const learnLink = screen.getByRole('link', { name: /learn about wallets/i });
+    const learnLink = screen.getByRole('link', { name: /visit the wallet setup guide/i });
 
     // Focus close button
     closeButton.focus();
@@ -250,6 +253,20 @@ describe('WalletConnectionModal Accessibility', () => {
     // Inline style is used so jsdom can read it (CSS files aren't processed in jsdom)
     expect(parseInt(freighterButton.style.minHeight, 10)).toBeGreaterThanOrEqual(44);
     expect(parseInt(freighterButton.style.minWidth, 10)).toBeGreaterThanOrEqual(44);
+  });
+
+  it('links to the Help Center wallet section with internal navigation', () => {
+    render(
+      <TestWrapper
+        isOpen={true}
+        onClose={mockOnClose}
+        onConnect={mockOnConnect}
+      />
+    );
+
+    expect(
+      screen.getByRole('link', { name: /visit the wallet setup guide/i })
+    ).toHaveAttribute('href', '/help#wallet');
   });
 
   // Wallet connection flow

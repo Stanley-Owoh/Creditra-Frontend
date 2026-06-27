@@ -1,6 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { CopyToClipboard } from "../components/CopyToClipboard";
+import {
+  DateRangeChips,
+  type DatePreset,
+} from "../components/DateRangeChips";
 import { MOCK_CREDIT_LINES } from "../data/mockData";
 import type {
   TransactionType,
@@ -17,7 +21,7 @@ import "./TransactionHistory.css";
  *
  * Features:
  * - Accessible filter chips for transaction type (All/Draw/Repay/Fee/Interest) using aria-pressed
- * - Accessible date range filter chips (7d/30d/90d/All) using aria-pressed
+ * - Accessible date range filter chips (Today/7d/30d/90d/Custom) using aria-pressed
  * - Live result count announcements via aria-live="polite" (WCAG 2.1 AA - 4.1.2)
  * - Distinct empty states:
  *   - "No transactions yet" when no data exists
@@ -100,17 +104,7 @@ const TYPE_FILTER_OPTIONS: Array<{
   { value: "Interest", label: "Interest" },
 ];
 
-// Date range filter presets: users can quickly view transactions from the last 7, 30, or 90 days
-// or see all transactions. Each option includes the day count for efficient filtering.
-const DATE_FILTER_OPTIONS = [
-  { value: "7d", label: "7d", days: 7 },
-  { value: "30d", label: "30d", days: 30 },
-  { value: "90d", label: "90d", days: 90 },
-  { value: "all", label: "All" },
-] as const;
-
 type TypeFilter = (typeof TYPE_FILTER_OPTIONS)[number]["value"];
-type DateFilter = (typeof DATE_FILTER_OPTIONS)[number]["value"];
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
@@ -334,7 +328,9 @@ export function TransactionHistory() {
   const [selectedLine, setSelectedLine] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<TypeFilter>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<DateFilter>("all");
+  const [dateRange, setDateRange] = useState<DatePreset>("custom");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -373,15 +369,10 @@ export function TransactionHistory() {
    * Result count is announced via aria-live region for accessibility.
    */
   const filteredTransactions = useMemo(() => {
-    const selectedDatePreset = DATE_FILTER_OPTIONS.find(
-      (option) => option.value === dateRange,
-    );
-    const cutoffTime =
-      selectedDatePreset && "days" in selectedDatePreset
-      ? Date.now() - selectedDatePreset.days * 24 * 60 * 60 * 1000
-      : null;
-
     return allTransactions.filter((tx) => {
+      const txTime = new Date(tx.date).getTime();
+      if (Number.isNaN(txTime)) return false;
+
       if (selectedLine !== "all" && tx.lineId !== selectedLine) return false;
       if (selectedType !== "all" && tx.type !== selectedType) return false;
       if (selectedStatus !== "all" && tx.status !== selectedStatus)
@@ -395,10 +386,29 @@ export function TransactionHistory() {
         if (!matchesNote && !matchesLine && !matchesId && !matchesHash)
           return false;
       }
-      if (cutoffTime !== null) {
-        const txTime = new Date(tx.date).getTime();
-        if (Number.isNaN(txTime) || txTime < cutoffTime) return false;
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+      if (dateRange === "today" && txTime < startOfToday) return false;
+      if (dateRange === "7d" && txTime < Date.now() - 7 * 24 * 60 * 60 * 1000)
+        return false;
+      if (dateRange === "30d" && txTime < Date.now() - 30 * 24 * 60 * 60 * 1000)
+        return false;
+      if (dateRange === "90d" && txTime < Date.now() - 90 * 24 * 60 * 60 * 1000)
+        return false;
+
+      if (dateRange === "custom") {
+        if (customStartDate) {
+          const start = new Date(`${customStartDate}T00:00:00`).getTime();
+          if (txTime < start) return false;
+        }
+
+        if (customEndDate) {
+          const end = new Date(`${customEndDate}T23:59:59.999`).getTime();
+          if (txTime > end) return false;
+        }
       }
+
       return true;
     });
   }, [
@@ -408,6 +418,8 @@ export function TransactionHistory() {
     selectedStatus,
     searchQuery,
     dateRange,
+    customStartDate,
+    customEndDate,
   ]);
 
   // Pagination
@@ -501,7 +513,9 @@ export function TransactionHistory() {
     selectedLine !== "all" ||
     selectedType !== "all" ||
     selectedStatus !== "all" ||
-    dateRange !== "all" ||
+    dateRange !== "custom" ||
+    customStartDate.length > 0 ||
+    customEndDate.length > 0 ||
     searchQuery.trim().length > 0;
 
   /**
@@ -520,7 +534,9 @@ export function TransactionHistory() {
     setSelectedLine("all");
     setSelectedType("all");
     setSelectedStatus("all");
-    setDateRange("all");
+    setDateRange("custom");
+    setCustomStartDate("");
+    setCustomEndDate("");
     setSearchQuery("");
     setCurrentPage(1);
     setExpandedTx(null);
@@ -774,29 +790,25 @@ export function TransactionHistory() {
          * - Changes trigger instant filter recalculation
          */}
         <div className="th-filter-group th-filter-group-wide">
-          <span className="th-filter-label" id="transaction-date-filter-label">
-            Date Range
-          </span>
-          <div
-            className="th-chip-group"
-            role="group"
-            aria-labelledby="transaction-date-filter-label"
-          >
-            {DATE_FILTER_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className="th-filter-chip"
-                aria-pressed={dateRange === option.value}
-                onClick={() => {
-                  setDateRange(option.value);
-                  setCurrentPage(1);
-                }}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          <DateRangeChips
+            selectedPreset={dateRange}
+            customStartDate={customStartDate}
+            customEndDate={customEndDate}
+            onPresetChange={(preset) => {
+              setDateRange(preset);
+              setCurrentPage(1);
+            }}
+            onCustomStartDateChange={(value) => {
+              setDateRange("custom");
+              setCustomStartDate(value);
+              setCurrentPage(1);
+            }}
+            onCustomEndDateChange={(value) => {
+              setDateRange("custom");
+              setCustomEndDate(value);
+              setCurrentPage(1);
+            }}
+          />
         </div>
         <div className="th-search-group">
           <label>Search</label>

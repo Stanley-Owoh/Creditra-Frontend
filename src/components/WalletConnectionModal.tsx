@@ -16,6 +16,7 @@
  */
 
 import React, { useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useInertBackdrop } from '@/hooks/useInertBackdrop';
@@ -281,15 +282,10 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
         {/* Footer note */}
         <div className="wallet-modal-footer">
           <p className="wallet-modal-note">
-            New to Stellar?{' '}
-            <a
-              href="https://stellar.org/wallets"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="wallet-modal-link"
-            >
-              Learn about wallets
-            </a>
+            Need help connecting?{' '}
+            <Link className="wallet-modal-link" to="/help#wallet" onClick={handleClose}>
+              Visit the wallet setup guide
+            </Link>
           </p>
         </div>
       </div>

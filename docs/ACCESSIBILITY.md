@@ -112,6 +112,7 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | --- | --- | --- | --- | --- | --- |
 | `WalletButton` | Tab/Enter/Esc; trigger has `aria-haspopup`/`aria-expanded` | `aria-label` on icon-only states | AA | n/a | OK |
 | `WalletConnectionModal` | Focus trap + return; Escape closes | `role="dialog"`, `aria-modal`, `aria-labelledby` | AA | reduced-motion gated | OK |
+| `ShortcutHelpOverlay` | Global `?` trigger outside text inputs; Escape closes; focus returns | `role="dialog"`, `aria-modal`, grouped shortcut lists | AA | reduced-motion gated | OK |
 | `OnboardingFlow` | Arrow keys advance steps (planned), Esc skips | Stepper labelled via `aria-label` | AA | `useReducedMotion()` | OK |
 | `FormField` | Native input semantics | Auto `htmlFor`, `aria-describedby`, `aria-invalid`, `aria-required` | AA | n/a | OK |
 | `FormMessage` | n/a (text only) | `role="alert"` on error | AA | reduced-motion gated | OK |
@@ -129,6 +130,7 @@ The table below is updated on every accessibility-impacting PR. Status legend:
 | `Header` nav | Tab through links; Enter activates | `aria-current="page"` on active link | AA | n/a | OK |
 | `RepayModal` | Focus trap | `role="dialog"`; uses focus-trap hook | AA | n/a | OK |
 | `TransactionHistory` | Sortable headers via Enter/Space | `aria-sort` reflects column state | AA | n/a | OK |
+| `HelpCenter` | Accordion buttons and transcript links are keyboard reachable | Video thumbnails are real buttons; iframe created only after opt-in | AA | n/a | OK |
 | `LandingPage` | Tab through CTAs and FAQ accordion | Framer Motion guarded by `useReducedMotion` | AA | reduced-motion gated | OK |
 | `ErrorBoundary` / `ErrorPage` | Tab through "Go back" and "Reload" | Semantic landmarks | AA | n/a | OK |
 
