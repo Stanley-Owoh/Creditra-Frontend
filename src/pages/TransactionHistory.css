@@ -233,6 +233,7 @@
     font-weight: 600;
     line-height: 1;
     cursor: pointer;
+    min-height: 44px;
     transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 

@@ -44,6 +44,9 @@ describe("TransactionHistory", () => {
     ).toHaveAttribute("aria-pressed", "false");
 
     expect(
+      within(dateGroup).getByRole("button", { name: "Today" }),
+    ).toHaveAttribute("aria-pressed", "false");
+    expect(
       within(dateGroup).getByRole("button", { name: "7d" }),
     ).toHaveAttribute("aria-pressed", "false");
     expect(
@@ -53,7 +56,7 @@ describe("TransactionHistory", () => {
       within(dateGroup).getByRole("button", { name: "90d" }),
     ).toHaveAttribute("aria-pressed", "false");
     expect(
-      within(dateGroup).getByRole("button", { name: "All" }),
+      within(dateGroup).getByRole("button", { name: "Custom" }),
     ).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -80,7 +83,7 @@ describe("TransactionHistory", () => {
     renderTransactionHistory();
 
     fireEvent.click(screen.getByRole("button", { name: "Fee" }));
-    fireEvent.click(screen.getByRole("button", { name: "90d" }));
+    fireEvent.click(screen.getByRole("button", { name: "Today" }));
 
     // Check no-results state appears
     const noResultsHeading = screen.getByRole("heading", {
@@ -107,5 +110,14 @@ describe("TransactionHistory", () => {
     // First "All" button (type filter) should be active
     const allButtons = screen.getAllByRole("button", { name: "All" });
     expect(allButtons[0].getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("opens custom date inputs when Custom is selected", () => {
+    renderTransactionHistory();
+
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+
+    expect(screen.getByLabelText("Start date")).toBeInTheDocument();
+    expect(screen.getByLabelText("End date")).toBeInTheDocument();
   });
 });

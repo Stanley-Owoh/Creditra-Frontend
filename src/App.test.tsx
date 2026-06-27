@@ -6,10 +6,12 @@ import App from "./App";
 describe("App Navigation Header", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.pushState({}, "", "/");
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    window.history.pushState({}, "", "/");
   });
 
   it("renders header with navigation links", () => {
@@ -82,6 +84,14 @@ describe("App Navigation Header", () => {
     // WalletButton should be rendered in the header
     const header = screen.getByRole("banner");
     expect(header).toBeInTheDocument();
+  });
+
+  it("renders the Settings shortcut help trigger", () => {
+    render(<App />);
+
+    expect(
+      screen.getByRole("button", { name: "Settings" }),
+    ).toBeInTheDocument();
   });
 
   it("has proper semantic structure with header and main elements", () => {
@@ -171,5 +181,28 @@ describe("App Styling and Accessibility", () => {
     // WalletButton should be available if WalletProvider is working
     const header = screen.getByRole("banner");
     expect(header).toBeInTheDocument();
+  });
+
+  it("opens shortcut help when ? is pressed outside inputs", () => {
+    render(<App />);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "?", bubbles: true }));
+
+    expect(
+      screen.getByRole("dialog", { name: /move around faster/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("ignores ? when focus is inside an input", () => {
+    window.history.pushState({}, "", "/help");
+    render(<App />);
+
+    const searchInput = screen.getByPlaceholderText("Search for help...");
+    searchInput.focus();
+    searchInput.dispatchEvent(new KeyboardEvent("keydown", { key: "?", bubbles: true }));
+
+    expect(
+      screen.queryByRole("dialog", { name: /move around faster/i }),
+    ).not.toBeInTheDocument();
   });
 });

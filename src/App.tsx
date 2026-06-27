@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { BrowserRouter, Route, Routes, Link, NavLink } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
 import { WalletProvider } from "./context/WalletContext";
@@ -8,6 +9,20 @@ import { TransactionHistory } from "./pages/TransactionHistory";
 import { RequestEvaluation } from "./pages/RequestEvaluation";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { NotFound } from "./pages/NotFound";
+import HelpCenter from "./pages/HelpCenter";
+import { ShortcutHelpOverlay } from "./components/ShortcutHelpOverlay";
+
+const isEditableTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+
+  const tagName = target.tagName.toLowerCase();
+  return (
+    target.isContentEditable ||
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select"
+  );
+};
 
 /**
  * Application root.
@@ -33,6 +48,28 @@ import { NotFound } from "./pages/NotFound";
  * See `docs/ARCHITECTURE.md` for the full component topology.
  */
 function App() {
+  const [isShortcutHelpOpen, setIsShortcutHelpOpen] = useState(false);
+  const [openedFromSettingsLink, setOpenedFromSettingsLink] = useState(false);
+  const settingsTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      if (event.key !== "?") return;
+      if (isEditableTarget(event.target)) return;
+
+      event.preventDefault();
+      setOpenedFromSettingsLink(false);
+      setIsShortcutHelpOpen(true);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
     <ErrorBoundary>
       <WalletProvider>
@@ -87,6 +124,17 @@ function App() {
                   Open Credit Line
                 </NavLink>
               </nav>
+              <button
+                ref={settingsTriggerRef}
+                type="button"
+                className="header-nav-link"
+                onClick={() => {
+                  setOpenedFromSettingsLink(true);
+                  setIsShortcutHelpOpen(true);
+                }}
+              >
+                Settings
+              </button>
               <WalletButton />
             </header>
             <main className="main">
@@ -94,6 +142,7 @@ function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/transactions" element={<TransactionHistory />} />
                 <Route path="/credit-lines" element={<CreditLines />} />
+                <Route path="/help" element={<HelpCenter />} />
                 <Route path="/draw-credit" element={<DrawCreditPage />} />
                 <Route
                   path="/draw-credit/success"
@@ -103,6 +152,11 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
+            <ShortcutHelpOverlay
+              isOpen={isShortcutHelpOpen}
+              onClose={() => setIsShortcutHelpOpen(false)}
+              triggerRef={openedFromSettingsLink ? settingsTriggerRef : undefined}
+            />
           </div>
         </BrowserRouter>
       </WalletProvider>
