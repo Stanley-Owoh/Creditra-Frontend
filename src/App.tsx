@@ -11,6 +11,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { NotFound } from "./pages/NotFound";
 import HelpCenter from "./pages/HelpCenter";
 import { ShortcutHelpOverlay } from "./components/ShortcutHelpOverlay";
+import { DutchAuctions } from "./pages/DutchAuctions";
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -123,6 +124,14 @@ function App() {
                 >
                   Open Credit Line
                 </NavLink>
+                <NavLink
+                  to="/dutch-auctions"
+                  className={({ isActive }) =>
+                    isActive ? "header-nav-link active" : "header-nav-link"
+                  }
+                >
+                  Dutch Auctions
+                </NavLink>
               </nav>
               <button
                 ref={settingsTriggerRef}
@@ -149,6 +158,7 @@ function App() {
                   element={<DrawCreditPage />}
                 />
                 <Route path="/open-credit" element={<RequestEvaluation />} />
+                <Route path="/dutch-auctions" element={<DutchAuctions />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
