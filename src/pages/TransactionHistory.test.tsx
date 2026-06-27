@@ -1,13 +1,13 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, MemoryRouter } from "react-router-dom";
 import { TransactionHistory } from "./TransactionHistory";
 
-const renderTransactionHistory = () => {
+const renderTransactionHistory = (initialEntries: string[] = ["/transactions"]) => {
   render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <TransactionHistory />
-    </BrowserRouter>,
+    </MemoryRouter>,
   );
 };
 
@@ -119,5 +119,47 @@ describe("TransactionHistory", () => {
 
     expect(screen.getByLabelText("Start date")).toBeInTheDocument();
     expect(screen.getByLabelText("End date")).toBeInTheDocument();
+  });
+
+  it("activates preset chips from the URL and keeps them in sync", () => {
+    renderTransactionHistory(["/transactions?range=this-month"]);
+
+    expect(screen.getByRole("button", { name: "This Month" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByText(/7 transactions shown/i)).toBeInTheDocument();
+  });
+
+  it("deselects the active preset when a custom date is edited", () => {
+    renderTransactionHistory(["/transactions?range=this-week"]);
+
+    const startInput = screen.getByLabelText("Start date");
+    fireEvent.change(startInput, { target: { value: "2025-02-01" } });
+
+    expect(screen.getByRole("button", { name: "This Week" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: "Custom" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("clears the preset URL param and the active filters from the empty state", () => {
+    renderTransactionHistory(["/transactions?range=this-week"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Fee" }));
+    fireEvent.click(screen.getByRole("button", { name: "Today" }));
+
+    const clearButton = screen.getByRole("button", { name: /clear filters/i });
+    fireEvent.click(clearButton);
+
+    expect(screen.getByRole("button", { name: "This Week" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.queryByText(/no transactions match these filters/i)).not.toBeInTheDocument();
   });
 });
