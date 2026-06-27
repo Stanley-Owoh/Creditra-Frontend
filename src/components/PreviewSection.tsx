@@ -1,4 +1,3 @@
-import { AccessibleTooltip } from "@/components/AccessibleTooltip";
 import { CreditLine } from "@/types/draw-credit.types";
 import { DollarSign, TrendingUp } from "lucide-react";
 import { formatMoney } from "@/utils/amountValidation";
@@ -69,10 +68,7 @@ export function PreviewSection({ creditLine, amount }: PreviewSectionProps) {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs text-muted font-medium mb-2">
-                {/* MICROCOPY.md: Utilization */}
-                <AccessibleTooltip label="Utilization is the percentage of your available credit that is currently being used.">
-                  <span>New Utilization</span>
-                </AccessibleTooltip>
+                New Utilization
               </p>
               <p className="text-2xl font-bold text-green-400">
                 {newUtilization}%
