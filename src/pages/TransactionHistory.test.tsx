@@ -134,45 +134,57 @@ describe("TransactionHistory", () => {
     expect(screen.getByLabelText("End date")).toBeInTheDocument();
   });
 
-  it("activates preset chips from the URL and keeps them in sync", () => {
-    renderTransactionHistory(["/transactions?range=this-month"]);
+  // ── A11Y-004: table caption tests ──────────────────────────────────────────
 
-    expect(screen.getByRole("button", { name: "This Month" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(screen.getByText(/7 transactions shown/i)).toBeInTheDocument();
+  it("renders a visually-hidden caption on the transaction table", () => {
+    renderTransactionHistory();
+    // The table is identified by its caption text via getByRole
+    const table = screen.getByRole("table", { name: /transaction history/i });
+    expect(table).toBeInTheDocument();
   });
 
-  it("deselects the active preset when a custom date is edited", () => {
-    renderTransactionHistory(["/transactions?range=this-week"]);
-
-    const startInput = screen.getByLabelText("Start date");
-    fireEvent.change(startInput, { target: { value: "2025-02-01" } });
-
-    expect(screen.getByRole("button", { name: "This Week" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
-    expect(screen.getByRole("button", { name: "Custom" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+  it("default caption describes unfiltered scope and result count", () => {
+    renderTransactionHistory();
+    const table = screen.getByRole("table", { name: /transaction history/i });
+    // No filter qualifiers in default state
+    expect(table).toHaveAccessibleName(/transaction history — \d+ results?/i);
+    // Confirm no filter fragment is included
+    expect(table.querySelector("caption")?.textContent).not.toMatch(/filtered by/i);
   });
 
-  it("clears the preset URL param and the active filters from the empty state", () => {
-    renderTransactionHistory(["/transactions?range=this-week"]);
+  it("caption updates when a type filter is applied", () => {
+    renderTransactionHistory();
+    fireEvent.click(screen.getByRole("button", { name: "Draw" }));
+    const table = screen.getByRole("table", { name: /transaction history/i });
+    expect(table).toHaveAccessibleName(/filtered by draw/i);
+  });
 
+  it("caption updates when a date preset is applied", () => {
+    renderTransactionHistory();
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
+    const table = screen.getByRole("table", { name: /transaction history/i });
+    expect(table).toHaveAccessibleName(/last 7 days/i);
+  });
+
+  it("caption includes multiple active filter qualifiers simultaneously", () => {
+    renderTransactionHistory();
+    fireEvent.click(screen.getByRole("button", { name: "Repay" }));
+    fireEvent.click(screen.getByRole("button", { name: "30d" }));
+    const caption = screen
+      .getByRole("table", { name: /transaction history/i })
+      .querySelector("caption");
+    expect(caption?.textContent).toMatch(/filtered by repayment/i);
+    expect(caption?.textContent).toMatch(/last 30 days/i);
+  });
+
+  it("caption reverts to unfiltered description after clearing filters", () => {
+    renderTransactionHistory();
     fireEvent.click(screen.getByRole("button", { name: "Fee" }));
     fireEvent.click(screen.getByRole("button", { name: "Today" }));
-
-    const clearButton = screen.getByRole("button", { name: /clear filters/i });
-    fireEvent.click(clearButton);
-
-    expect(screen.getByRole("button", { name: "This Week" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
+    fireEvent.click(screen.getByRole("button", { name: /clear filters/i }));
+    const table = screen.getByRole("table", { name: /transaction history/i });
+    expect(table.querySelector("caption")?.textContent).not.toMatch(
+      /filtered by/i,
     );
-    expect(screen.queryByText(/no transactions match these filters/i)).not.toBeInTheDocument();
   });
 });

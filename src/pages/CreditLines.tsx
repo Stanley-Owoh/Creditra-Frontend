@@ -10,6 +10,18 @@ import {
 } from '../utils/tokens';
 import './CreditLines.css';
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Human-readable label for each sort field — used in the accessible region label. */
+const SORT_LABELS: Record<SortField, string> = {
+  updatedAt: 'last updated',
+  status: 'status',
+  limit: 'credit limit',
+  utilization: 'utilization',
+  apr: 'APR',
+  riskScore: 'risk score',
+};
+
 // ─── Credit Line Card ────────────────────────────────────────────────────────
 
 function CreditLineCard({ line }: { line: typeof MOCK_CREDIT_LINES[0] }) {
@@ -146,6 +158,33 @@ export default function CreditLines() {
     }
   };
 
+  /**
+   * Accessible region label (A11Y-004).
+   *
+   * The credit lines list is a card grid, not a `<table>`, so the right
+   * primitive is `<section aria-label>` rather than `<caption>`.  The label
+   * updates whenever the status filter or sort order changes, giving
+   * screen-reader users immediate context about the current view scope.
+   *
+   * Format: "Credit lines[, filtered by <status>], sorted by <field>
+   *          <direction> — <n> result(s)"
+   */
+  const regionLabel = useMemo(() => {
+    const parts: string[] = [];
+
+    if (statusFilter !== 'all') {
+      parts.push(`filtered by ${statusFilter}`);
+    }
+
+    const dir = sortDir === 'asc' ? 'ascending' : 'descending';
+    parts.push(`sorted by ${SORT_LABELS[sortField]} ${dir}`);
+
+    const count = filteredAndSorted.length;
+    const suffix = `— ${count} ${count === 1 ? 'result' : 'results'}`;
+
+    return `Credit lines, ${parts.join(', ')} ${suffix}`;
+  }, [statusFilter, sortField, sortDir, filteredAndSorted.length]);
+
   return (
     <div className="credit-lines-page">
       <div className="cl-page-header">
@@ -160,8 +199,12 @@ export default function CreditLines() {
 
       <div className="cl-filters">
         <div className="cl-filter-group">
-          <label>Status</label>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as CreditLineStatus | 'all')}>
+          <label htmlFor="cl-status-filter">Status</label>
+          <select
+            id="cl-status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as CreditLineStatus | 'all')}
+          >
             <option value="all">All Statuses</option>
             <option value="Active">Active</option>
             <option value="Suspended">Suspended</option>
@@ -170,8 +213,12 @@ export default function CreditLines() {
           </select>
         </div>
         <div className="cl-filter-group">
-          <label>Sort By</label>
-          <select value={sortField} onChange={(e) => handleSort(e.target.value as SortField)}>
+          <label htmlFor="cl-sort-field">Sort By</label>
+          <select
+            id="cl-sort-field"
+            value={sortField}
+            onChange={(e) => handleSort(e.target.value as SortField)}
+          >
             <option value="updatedAt">Last Updated</option>
             <option value="status">Status</option>
             <option value="limit">Credit Limit</option>
@@ -182,28 +229,36 @@ export default function CreditLines() {
         </div>
         <button
           className="cl-sort-dir"
+          aria-label={`Sort direction: ${sortDir === 'asc' ? 'ascending, switch to descending' : 'descending, switch to ascending'}`}
           onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
         >
-          {sortDir === 'asc' ? '↑' : '↓'}
+          <span aria-hidden="true">{sortDir === 'asc' ? '↑' : '↓'}</span>
         </button>
       </div>
 
-      {filteredAndSorted.length === 0 ? (
-        <div className="cl-empty">
-          <div className="cl-empty-icon">💳</div>
-          <h3>No credit lines found</h3>
-          <p>Apply for a credit line to get started</p>
-          <Link to="/open-credit" className="cl-primary-btn">
-            Open Credit Line
-          </Link>
-        </div>
-      ) : (
-        <div className="cl-grid">
-          {filteredAndSorted.map(line => (
-            <CreditLineCard key={line.id} line={line} />
-          ))}
-        </div>
-      )}
+      {/*
+        * Accessible results region (A11Y-004).
+        * aria-label is updated by regionLabel whenever filters or sort changes,
+        * giving screen-reader users immediate context about the current scope.
+        */}
+      <section aria-label={regionLabel}>
+        {filteredAndSorted.length === 0 ? (
+          <div className="cl-empty">
+            <div className="cl-empty-icon">💳</div>
+            <h3>No credit lines found</h3>
+            <p>Apply for a credit line to get started</p>
+            <Link to="/open-credit" className="cl-primary-btn">
+              Open Credit Line
+            </Link>
+          </div>
+        ) : (
+          <div className="cl-grid">
+            {filteredAndSorted.map(line => (
+              <CreditLineCard key={line.id} line={line} />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

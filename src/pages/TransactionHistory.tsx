@@ -610,6 +610,62 @@ export function TransactionHistory() {
   const resultCountText = `${filteredTransactions.length} ${filteredTransactions.length === 1 ? "transaction" : "transactions"} shown`;
 
   /**
+   * Accessible table caption (A11Y-004).
+   *
+   * Describes the table's current scope to screen-reader users.  The text is
+   * visually hidden via `.sr-only` but fully announced when the user navigates
+   * to the table.  It updates whenever the active filters change so the caption
+   * always reflects what is actually shown.
+   *
+   * Composition:
+   *   "Transaction history[, filtered by <type>][, <dateLabel>][, matching "<query>"]
+   *    — <n> result(s)"
+   */
+  const tableCaption = useMemo(() => {
+    const parts: string[] = [];
+
+    if (selectedType !== "all") {
+      parts.push(`filtered by ${TX_TYPE_LABELS[selectedType as TransactionType]}`);
+    }
+
+    const dateLabels: Record<string, string> = {
+      today: "today",
+      "7d": "last 7 days",
+      "30d": "last 30 days",
+      "90d": "last 90 days",
+    };
+    if (dateRange !== "custom" && dateLabels[dateRange]) {
+      parts.push(dateLabels[dateRange]);
+    } else if (dateRange === "custom" && (customStartDate || customEndDate)) {
+      const from = customStartDate || "any";
+      const to = customEndDate || "any";
+      parts.push(`from ${from} to ${to}`);
+    }
+
+    if (selectedStatus !== "all") {
+      parts.push(`status: ${selectedStatus}`);
+    }
+
+    if (searchQuery.trim()) {
+      parts.push(`matching "${searchQuery.trim()}"`);
+    }
+
+    const count = filteredTransactions.length;
+    const suffix = `— ${count} ${count === 1 ? "result" : "results"}`;
+
+    const scope = parts.length > 0 ? `, ${parts.join(", ")}` : "";
+    return `Transaction history${scope} ${suffix}`;
+  }, [
+    selectedType,
+    dateRange,
+    customStartDate,
+    customEndDate,
+    selectedStatus,
+    searchQuery,
+    filteredTransactions.length,
+  ]);
+
+  /**
    * Clear all active filters and return to initial state.
    * Called when user clicks "Clear filters" in the no-results empty state.
    * Also clears expanded transaction details and resets to page 1.
@@ -1089,6 +1145,7 @@ export function TransactionHistory() {
         ) : (
           <>
             <table className="th-table">
+              <caption className="sr-only">{tableCaption}</caption>
               <thead>
                 <tr>
                   <th>Date</th>
