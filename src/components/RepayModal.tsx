@@ -1,7 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import { formatMoney, getRepayAmountValidation } from '../utils/amountValidation';
+import { formatMoney, getRepayAmountValidation, requiresRepayConfirmation } from '../utils/amountValidation';
 import { InlineHelpOverlay } from './InlineHelpOverlay';
 import { PendingButton } from './PendingButton';
 
@@ -94,6 +94,13 @@ export function RepayModal({
     onEscape: step !== 'pending' ? onClose : undefined,
   });
   const [amountStr, setAmountStr] = useState('');
+  const [confirmAmountStr, setConfirmAmountStr] = useState('');
+
+  useEffect(() => {
+    if (step === 'review') {
+      setConfirmAmountStr('');
+    }
+  }, [step]);
 
   const totalDue = creditLine.utilized;
   const accruedInterestEstimate = (creditLine.utilized * (creditLine.apr / 100)) / 12;
@@ -116,6 +123,11 @@ export function RepayModal({
     danger: { color: COLOR.danger, bg: 'rgba(248,81,73,0.08)', border: 'rgba(248,81,73,0.25)', icon: <AlertCircle size={16} aria-hidden="true" /> },
   } as const;
   const activeTone = toneMeta[validation.feedback.severity];
+
+  const needsConfirm = requiresRepayConfirmation(amount);
+  const confirmParse = (s: string) => Number.parseFloat(s) || 0;
+  const isConfirmMatch = needsConfirm ? confirmParse(confirmAmountStr) === amount : true;
+  const isConfirmDisabled = needsConfirm && !isConfirmMatch;
 
   const handlePercent = (pct: number) => {
     let target = (validation.maxRepayAmount * pct) / 100;
@@ -442,18 +454,72 @@ export function RepayModal({
               </div>
             </div>
 
+            {needsConfirm && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label htmlFor="confirm-repay-amount" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: COLOR.text, fontWeight: 500 }}>
+                  Type the amount to confirm
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1.25rem', color: COLOR.muted }} aria-hidden="true">$</span>
+                  <input
+                    id="confirm-repay-amount"
+                    type="number"
+                    value={confirmAmountStr}
+                    onChange={(e) => setConfirmAmountStr(e.target.value)}
+                    placeholder={fmt(amount)}
+                    aria-describedby="confirm-repay-description"
+                    autoComplete="off"
+                    style={{
+                      width: '100%',
+                      background: COLOR.bg,
+                      border: `1px solid ${!isConfirmMatch && confirmAmountStr !== '' ? COLOR.danger : isConfirmMatch && confirmAmountStr !== '' ? COLOR.success : COLOR.border}`,
+                      borderRadius: 8,
+                      padding: '0.75rem 1rem 0.75rem 2rem',
+                      color: COLOR.text,
+                      fontSize: '1.25rem',
+                      fontWeight: 500,
+                      outline: 'none',
+                      transition: 'all 0.2s',
+                    }}
+                  />
+                </div>
+                <p id="confirm-repay-description" style={{ margin: '0.5rem 0 0', fontSize: '0.82rem', color: COLOR.muted }}>
+                  Type the repayment amount ({fmt(amount)}) to enable the Confirm Repayment button.
+                </p>
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button onClick={() => setStep('input')} style={{ ...btn.outline, flex: 1 }}>
                 Back
               </button>
-              <PendingButton
-                onClick={handleConfirm}
-                pending={false}
-                pendingLabel="Processing..."
-                style={{ ...btn.primary, flex: 2 }}
-              >
-                Confirm Repayment
-              </PendingButton>
+              <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <PendingButton
+                  onClick={handleConfirm}
+                  pending={false}
+                  pendingLabel="Processing..."
+                  disabled={isConfirmDisabled}
+                  aria-disabled={isConfirmDisabled || undefined}
+                  aria-describedby={isConfirmDisabled ? 'confirm-repay-disabled-helper' : undefined}
+                  style={{
+                    ...btn.primary,
+                    width: '100%',
+                    opacity: isConfirmDisabled ? 0.5 : 1,
+                    cursor: isConfirmDisabled ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Confirm Repayment
+                </PendingButton>
+                {isConfirmDisabled && (
+                  <p
+                    id="confirm-repay-disabled-helper"
+                    style={{ margin: 0, fontSize: '0.8rem', color: COLOR.muted, textAlign: 'center' }}
+                    role="status"
+                  >
+                    Type the amount above to enable confirmation.
+                  </p>
+                )}
+              </div>
             </div>
             <button
               ref={helpTriggerRef}

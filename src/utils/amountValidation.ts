@@ -48,6 +48,26 @@ export interface RepayAmountValidationResult {
 
 const MIN_AMOUNT = 1;
 
+/**
+ * Threshold above which repayments require the user to type the exact amount
+ * in a confirmation field before the "Confirm Repayment" button enables.
+ *
+ * Set to `0` or a negative value to disable the confirm-by-typing guard
+ * entirely across the entire application.
+ *
+ * Configurable — update this value to change the threshold globally.
+ */
+export const REPAY_CONFIRM_THRESHOLD = 5000;
+
+/**
+ * Returns `true` when `amount` meets or exceeds `REPAY_CONFIRM_THRESHOLD`,
+ * indicating the confirm-by-typing guard should be shown in the review step.
+ * When the threshold is `0` or negative, this always returns `false`,
+ * effectively disabling the guard.
+ */
+export const requiresRepayConfirmation = (amount: number): boolean =>
+  REPAY_CONFIRM_THRESHOLD > 0 && amount >= REPAY_CONFIRM_THRESHOLD;
+
 export const formatMoney = (amount: number) =>
   new Intl.NumberFormat('en-US', {
     style: 'currency',
